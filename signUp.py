@@ -1,6 +1,7 @@
 import os,pandas as pd,csv
 import hashlib
 user_database='/Users/bhoomi/Documents/GitHub/DBMS/user_database.csv'
+table_path='/Users/bhoomi/Documents/GitHub/DBMS/'
 
 def validate_username(username):
     if os.path.exists(user_database):
@@ -63,12 +64,16 @@ def sign_up():
                             password=hashlib.sha256(password.encode()).hexdigest()
                             writer.writerow([username,password,email])
                             print(f'{username} added successfully!')
+                            os.chdir(table_path)
+                            os.mkdir(username)
                     else:
                         with open(user_database,mode='a',newline='') as file:
                             writer=csv.writer(file)
                             password=hashlib.sha256(password.encode()).hexdigest()
                             writer.writerow([username,password,email])  
                             print(f'{username} added successfully!')
+                            os.chdir(table_path)
+                            os.mkdir(username)
     else:
         print('\n')
         sign_up()

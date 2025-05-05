@@ -2,6 +2,7 @@ import os,csv,pandas as pd
 from Login import login
 from signUp import sign_up
 from ForgotPassword import forgot_pass
+from Query import query
 
 user_database='/Users/bhoomi/Documents/GitHub/DBMS/user_database.csv'
 
@@ -15,9 +16,17 @@ if __name__=='__main__':
         choice=greet()
         match choice:
             case 1:
-                login()
+                is_valid,username=login()
+                while not is_valid:
+                    is_valid,username=login()
+                query(username)
             case 2:
                 sign_up()
+                print('\nLogin:\n')
+                is_valid=login()
+                while not is_valid:
+                    is_valid=login()
+                query()
             case 3:
                 forgot_pass()
             case _:

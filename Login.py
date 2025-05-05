@@ -11,6 +11,8 @@ def login():
         row=df[df['username']==username]
         if password==row.iloc[0]['password']:
             print(f'Welcome back {username}')
+            return True,username
     else:
         print('Invalid username or password')
+        return False,None
 
