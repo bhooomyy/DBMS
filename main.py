@@ -16,10 +16,11 @@ if __name__=='__main__':
         choice=greet()
         match choice:
             case 1:
-                is_valid,username=login()
-                while not is_valid:
-                    is_valid,username=login()
-                query(username)
+                # is_valid,username=login()
+                # while not is_valid:
+                #     is_valid,username=login()
+                # query(username)
+                query('bhoomi')
             case 2:
                 sign_up()
                 print('\nLogin:\n')

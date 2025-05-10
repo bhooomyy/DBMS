@@ -1,1 +1,1 @@
-empName.string,empId.integer,empDepartment.varchar
+empName.string,empId.integer,empDepartment.float
