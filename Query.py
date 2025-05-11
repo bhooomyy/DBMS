@@ -69,43 +69,43 @@ def insert_query(query,username):
                 try:
                     if(csv_col_type.lower()=='integer'):
                         if '.' in value:
-                            print(f"{requested_columns[requested_columns.index(csv_columns)]} only accept integer type. You are passing float value. type mismatch error...")
+                            print(f"{csv_columns} only accept integer type. You are passing float value. type mismatch error...")
                             isValid=False
                             break
                         if "'" in value:
-                            print(f"{requested_columns[requested_columns.index(csv_columns)]} only accept integer type. You are passing string or varchar. type mismatch error...")
+                            print(f"{csv_columns} only accept integer type. You are passing string or varchar. type mismatch error...")
                             isValid=False
                             break
                         if '-' in value:
-                            print(f"{requested_columns[requested_columns.index(csv_columns)]} only accept integer type. You are passing Negative value which is not acceptable. type mismatch error...")
+                            print(f"{csv_columns} only accept integer type. You are passing Negative value which is not acceptable. type mismatch error...")
                             isValid=False
                             break
                         if value.isdigit():
                             result.append(int(value))
                     elif csv_col_type.lower()=='float':
                         if "'" in value:
-                            print(f"{requested_columns[requested_columns.index(csv_columns)]} only accept float type. You are passing string or varchar. type mismatch error...")
+                            print(f"{csv_columns} only accept float type. You are passing string or varchar. type mismatch error...")
                             isValid=False
                             break
                         if '.' not in value and value.isdigit():
-                            print(f"{requested_columns[requested_columns.index(csv_columns)]} only accept float value. You are passing integer value. type mismatch error...")
+                            print(f"{csv_columns} only accept float value. You are passing integer value. type mismatch error...")
                             isValid=False
                             break
                         if value.replace('.', '', 1).isdigit():
                             result.append(float(value))
                     elif(csv_col_type.lower()=='string' or csv_col_type.lower()=='varchar'):
                         if '.' in value and value.replace('.', '', 1).isdigit():
-                            print(f"{requested_columns[requested_columns.index(csv_columns)]} only accept string type. You are passing float value. type mismatch error...")
+                            print(f"{csv_columns} only accept string type. You are passing float value. type mismatch error...")
                             isValid=False
                             break
                         if value.isdigit():
-                            print(f"{requested_columns[requested_columns.index(csv_columns)]} only accept string. You are passing integer type. type mismatch error...")
+                            print(f"{csv_columns} only accept string. You are passing integer type. type mismatch error...")
                             isValid=False
                             break
                         if (value.startswith("'") and value.endswith("'")):
                             result.append(value)
                         else:
-                            print(f"{requested_columns[requested_columns.index(csv_columns)]} only accept string or varchar type. ' is missing. type mismatch error...")
+                            print(f"{csv_columns} only accept string or varchar type. ' is missing. type mismatch error...")
                             isValid=False
                             break
                 except ValueError:
