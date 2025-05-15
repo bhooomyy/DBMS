@@ -72,8 +72,6 @@ def sign_up():
                             password=hashlib.sha256(password.encode()).hexdigest()
                             writer.writerow([username,password,email])  
                             print(f'{username} added successfully!')
-                            os.chdir(table_path)
-                            os.mkdir(username)
     else:
         print('\n')
         sign_up()

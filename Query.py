@@ -124,21 +124,151 @@ def insert_query(query,username):
     else:
         print('No such table exists...')
 
-
 def select_query(query,username):
-    if '*' in query:
-        chunk=query.strip().split(' ')
-        if chunk[2].lower()=='from':
-            table_path=os.path.join(os.getcwd(), username, f"{chunk[3]}.csv")
-            #os.path.join(os.path.join(os.getcwd(),username),chunk[3]+'.csv')
-            print(pd.read_csv(table_path))
-    elif ',' in query:
-        chunk=query.strip().split(',')
+    chunk=query.strip().split(' ')
+    if len(chunk) < 4 or chunk[0] != 'select' or chunk[2] != 'from':
+            print("Error: Invalid query format. Expected: SELECT <columns> FROM <table> [WHERE <conditions> (optional)]")
+            return False
+    if 'where' in query.lower():
+        table_name=query.strip().split('from')[1].split('where')[0].strip(' ')
     else:
-        chunk=query.strip().split(' ')
-        table_path=os.path.join(os.getcwd(), username, f"{chunk[3]}.csv")
-        df=pd.read_csv(table_path)
-        print(df[chunk[1]].values)
+        table_name=query.strip().split('from')[1].strip(' ')
+
+    table_path=os.path.join(os.getcwd(), username, table_name+".csv")
+    df=pd.read_csv(table_path)
+    col_name=[col.split('.')[0] for col in df.columns]
+    df.columns=col_name
+    if 'where' not in query:
+        if '*' in query:
+            print(df)
+        elif ',' in query:
+            columns=query.split('select')[1].split('from')[0]
+            columns=columns.strip().split(',')
+            print(columns)
+            print(df[columns])
+        else:
+            requested_col=query.split('select')[1].split('from')[0].strip(' ')
+            print(f"Index {requested_col}")
+            print(df[requested_col])
+    else:
+        condition=query.split('where')[1].strip(' ')
+        if '<>'in query or '!=' in query:
+            if '<>' in query:
+                condition=condition.split('<>')
+            else:
+                condition=condition.split('!=')
+            condition_col=condition[0].strip()
+            condition_col_value=condition[1].strip()
+            print(f"{condition_col} {condition_col_value}")
+            if condition_col not in df.columns:
+                print(f"No such column exists named {condition_col} ok?")
+                return
+            filtered_df=df[df[condition_col].astype(str)!=condition_col_value]
+            result=[]
+            if '*' in query:
+                print(filtered_df)
+            elif ',' in query:
+                columns=query.split('select')[1].split('from')[0]
+                columns=columns.strip().split(',')
+                print(filtered_df[columns])
+            else:
+                requested_col=query.split('select')[1].split('from')[0].strip(' ')
+                print(f"Index {requested_col}")
+                print(filtered_df[requested_col])
+        elif '=' in query:
+            condition=condition.strip(' ').split('=')
+            condition_col=condition[0]
+            condition_col_value=condition[1]
+            if condition_col not in df.columns:
+                print(f"No such column exists named {condition_col}")
+                return
+            filtered_df=df[df[condition_col].astype(str)==condition_col_value]
+            if '*' in query:
+                print(filtered_df)
+            elif ',' in query:
+                columns=query.split('select')[1].split('from')[0]
+                columns=columns.strip().split(',')
+                print(filtered_df[columns])
+            else:
+                requested_col=query.split('select')[1].split('from')[0].strip(' ')
+                print(f"Index {requested_col}")
+                print(filtered_df[requested_col])
+        elif '<' in query:
+            condition=condition.strip(' ').split('<')
+            condition_col=condition[0]
+            condition_col_value=condition[1]
+            if condition_col not in df.columns:
+                print(f"No such column exists named {condition_col}")
+                return
+            filtered_df=df[df[condition_col].astype(str)<condition_col_value]
+            if '*' in query:
+                print(filtered_df)
+            elif ',' in query:
+                columns=query.split('select')[1].split('from')[0]
+                columns=columns.strip().split(',')
+                print(filtered_df[columns])
+            else:
+                requested_col=query.split('select')[1].split('from')[0].strip(' ')
+                print(f"Index {requested_col}")
+                print(filtered_df[requested_col])
+        elif '>' in query:
+            condition=condition.strip(' ').split('>')
+            condition_col=condition[0]
+            condition_col_value=condition[1]
+            if condition_col not in df.columns:
+                print(f"No such column exists named {condition_col}")
+                return
+            filtered_df=df[df[condition_col].astype(str)>condition_col_value]
+            if '*' in query:
+                print(filtered_df)
+            elif ',' in query:
+                columns=query.split('select')[1].split('from')[0]
+                columns=columns.strip().split(',')
+                print(filtered_df[columns])
+            else:
+                requested_col=query.split('select')[1].split('from')[0].strip(' ')
+                print(f"Index {requested_col}")
+                print(filtered_df[requested_col])
+        elif 'not in' in query.lower():
+            condition_col=condition.split('not in')[0].strip(' ')
+            condition=condition.split('(')[1].strip(')')
+            if ',' in condition.lower():
+                condition_col_val=condition.split(',')
+            else:
+                condition_col_val=condition
+            filtered_df=df[~df[condition_col].astype(str).isin(condition_col_val)]
+            if '*' in query:
+                print(filtered_df)
+            elif ',' in query:
+                columns=query.split('select')[1].split('from')[0]
+                columns=columns.strip().split(',')
+                print(filtered_df[columns])
+            else:
+                requested_col=query.split('select')[1].split('from')[0].strip(' ')
+                print(f"Index {requested_col}")
+                print(filtered_df[requested_col])
+        elif 'in' in query.lower():
+            condition_col=condition.split('in')[0].strip(' ')
+            condition=condition.split('(')[1].strip(')')
+            if ',' in condition.lower():
+                condition_col_val=condition.split(',')
+            else:
+                condition_col_val=condition
+            filtered_df=df[df[condition_col].astype(str).isin(condition_col_val)]
+            if '*' in query:
+                print(filtered_df)
+            elif ',' in query:
+                columns=query.split('select')[1].split('from')[0]
+                columns=columns.strip().split(',')
+                print(filtered_df[columns])
+            else:
+                requested_col=query.split('select')[1].split('from')[0].strip(' ')
+                print(f"Index {requested_col}")
+                print(filtered_df[requested_col])
+        
+
+def update_query(query,username):
+    print()
 
 def query(username):
     while True:
@@ -152,6 +282,8 @@ def query(username):
             create_query(query,username)
         elif command[0].lower()=='insert':
             insert_query(query,username)
+        elif command[0].lower()=='update':
+            update_query(query,username)
         # elif command[0].lower=='delete':
         #     delete_query(query,username)
         # else:
