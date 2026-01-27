@@ -264,11 +264,90 @@ def select_query(query,username):
             else:
                 requested_col=query.split('select')[1].split('from')[0].strip(' ')
                 print(f"Index {requested_col}")
-                print(filtered_df[requested_col])
-        
+                print(filtered_df[requested_col])       
+
 
 def update_query(query,username):
-    print()
+    chunk=query.strip().split(' ')
+    if chunk[0].lower()=='update' and chunk[2].lower()=='set':
+        table_name=chunk[1].strip()
+
+        table_path=os.path.join(os.getcwd(), username, table_name+".csv")   
+        if os.path.exists(table_path):
+            df=pd.read_csv(table_path)
+            col_name=[col.split('.')[0] for col in df.columns]
+            df.columns=col_name
+
+            after_set=query.strip().split('set',1)[1].strip() if 'set' in query.lower() else query.strip().split('SET',1)[1].strip()
+            if 'where' in query.lower():
+                set_part=after_set.split('where',1)[0].strip()
+                where_part=after_set.split('where',1)[1].strip()
+            else:
+                set_part=after_set.strip()
+                where_part=None
+            
+            temp=set_part.split('=',1)
+            col=temp[0].strip()
+            col_data=temp[1].strip().rstrip(';')
+            if (col_data.startswith("'") and col_data.endswith("'")) or (col_data.startswith('"') and col_data.endswith('"')):
+                col_data=col_data[1:-1]
+            
+            if where_part is not None:
+                where_part=where_part.rstrip(';').strip()
+
+                ops=['<=','>=','<>','!=','=','<','>']
+                op_found=None
+                for op in ops:
+                    if op in where_part:
+                        op_found=op
+                        temp=where_part.split(op,1)
+                        condition_col=temp[0].strip()
+                        condition_col_data=temp[1].strip()
+                        break
+                
+                if op_found is None:
+                    print('Syntax error in where! Use one of: =, !=, <>, <, >, <=, >=')
+                    return
+                
+                if (condition_col_data.startswith("'") and condition_col_data.endswith("'")) or (condition_col_data.startswith('"') and condition_col_data.endswith('"')):
+                    condition_col_data=condition_col_data[1:-1]
+                
+                if condition_col in df.columns and col in df.columns:
+                    s=df[condition_col].astype(str)
+                    v=str(condition_col_data)
+
+                    if op_found== '=':
+                        mask=(s==v)
+                    elif op_found in ('!=','<>'):
+                        mask=(s!=v)
+                    elif op_found=='<':
+                        mask=(s<v)
+                    elif op_found=='>':
+                        mask=(s>v)
+                    elif op_found=='>=':
+                        mask=(s>=v)
+                    elif op_found =='<=':
+                        mask=(s<=v)
+
+                    df.loc[mask,col]=col_data
+                    df.to_csv(table_path,index=False)
+                    print(f"Row(s) updated! ({int(mask.sum())})")
+                else:
+                    print(f"{condition_col} or {col} doesn't exists. please check column name")
+                    return
+            else:
+                if col in df.columns:
+                    df[col]=col_data
+                    df.to_csv(table_path,index=False)
+                    print('All row(s) updated!')
+                else:
+                    print(f"{col} doen't exists. please check column name")
+                    return
+        else:
+            print("No such table exists!")
+            return   
+    else:
+        print('Syntax error! follow structure->[UPDATE table_name SET column_name = new_value WHERE condition;]')
 
 def query(username):
     while True:
