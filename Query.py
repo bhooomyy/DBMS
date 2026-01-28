@@ -1,5 +1,33 @@
 import os,pandas as pd,csv
+import shutil
+import uuid
 #table_path='/Users/bhoomi/Documents/GitHub/DBMS/'
+BASE_DIR=os.path.dirname(os.path.abspath(__file__))
+TXN={
+    "active":False,
+    "id":None,
+    "staged_dir":None,
+    "touched":set(),
+}
+def _user_dir(username):
+    return os.path.join(BASE_DIR,username)
+
+def begin_txn(username):
+    if TXN["active"]:
+        print("Transaction already active.")
+        return
+
+    txn_id=uuid.uuid4().hex[:10]
+    staged_dir=os.path.join(_user_dir(username),".txn",txn_id)
+    os.makedirs(staged_dir,exist_ok=True)
+
+    TXN["active"]=True
+    TXN["id"]=txn_id
+    TXN["staged_dir"]=staged_dir
+    TXN["touched"]=set()
+    print("BEGIN")
+    
+
         
 def create_query(query,username):
     if '(' in query and ')' in query:
@@ -418,13 +446,22 @@ def delete_query(query,username):
         print('Syntax error! [DELETE FROM <table_name> WHERE <condition>(optional)]')
         return
 
+def begin_txn(username):
+
+
 def query(username):
     while True:
         query=input('\nPress enter to End the session...\nEnter query: ')
         if not query:
             return False
         command=query.strip().split(' ')
-        if command[0].lower()=='select':
+        if command[0].lower()=='begin':
+            begin_txn(username)
+        #elif command[0].lower()=='commit':
+        #    commit_txn(username)
+        #elif command[0].lower()=='rollback':
+        #    rollback_txn(username)
+        elif command[0].lower()=='select':
             select_query(query,username)
         elif command[0].lower()=='create':
             create_query(query,username)
