@@ -70,12 +70,34 @@ def rollback_txn(username):
     TXN["staged_dir"]=None
     TXN["touched"]=set()
     print("Rollback")
-        
+
+def get_table_path(username,tablename,create_ok=False):
+    real=_real_table_path(username,tablename)
+
+    if not TXN["active"]:
+        return real
+    
+    staged=_staged_table_path(username,tablename)
+    os.makedirs(TXN["staged_dir"],exist_ok=True)
+
+    if tablename not in TXN["touched"]:
+        if os.path.exists(real):
+            shutil.copy2(real,staged)
+            TXN["touched"].add(tablename)
+        else:
+            if create_ok:
+                TXN["touched"].add(tablename)
+                return staged
+            return real
+    return staged
+
+
 def create_query(query,username):
     if '(' in query and ')' in query:
         temp=query.split('(')
         table_name=temp[0].strip().split(' ')[-1]
-        table_path=os.path.join(os.getcwd(), username, table_name+".csv")
+        #table_path=os.path.join(os.getcwd(), username, table_name+".csv")
+        table_path=get_table_path(username,table_name,create_ok=True)
         if os.path.exists(table_path):
             print('Table already exists...')
         else:
@@ -100,7 +122,7 @@ def create_query(query,username):
         print('Invalid query. Please check syntax...Expected "CREATE TABLE <table_name>(column_name1 column_type1,column_name2 columns_type2,...)"')
     else:
         chunk=query.strip().split(' ')
-        table_path=os.path.join(os.getcwd(), username, f"{chunk[2]}.csv")
+        table_path=get_table_path(username,chunk[2],create_ok=True)
         if os.path.exists(table_path):
             print('Table already exists...')
         else:
@@ -120,12 +142,19 @@ def insert_query(query,username):
     if len(requested_columns)!=len(requested_col_values):
         print('Number of requested columns are not same as number of requested values')
         return
-    table_path=os.path.join(os.getcwd(),username,table_name+'.csv')
+    table_path = get_table_path(username, table_name)
     result=[]
     if os.path.exists(table_path):
         df=pd.read_csv(table_path)
         df_columns=[col.split('.')[0] for col in df.columns]
-        df_col_type=[col.split('.')[1] for col in df.columns]
+        df_col_type=[]
+        for col in df.columns:
+            if '.' in col:
+                df_col_type.append(col.split('.')[1])
+            else:
+                print("Schema error: column type missing for", col)
+                return
+
         for col in requested_columns:
             if col not in df_columns:
                 print(f'Error {col} doesn\'t exist in table...')
@@ -341,9 +370,10 @@ def update_query(query,username):
     if chunk[0].lower()=='update' and chunk[2].lower()=='set':
         table_name=chunk[1].strip()
 
-        table_path=os.path.join(os.getcwd(), username, table_name+".csv")   
+        table_path=os.path.join(os.getcwd(), username, table_name+".csv")  
         if os.path.exists(table_path):
             df=pd.read_csv(table_path)
+            original_headers = list(df.columns) 
             col_name=[col.split('.')[0] for col in df.columns]
             df.columns=col_name
 
@@ -399,6 +429,7 @@ def update_query(query,username):
                         mask=(s<=v)
 
                     df.loc[mask,col]=col_data
+                    df.columns = original_headers    
                     df.to_csv(table_path,index=False)
                     print(f"Row(s) updated! ({int(mask.sum())})")
                 else:
@@ -407,6 +438,7 @@ def update_query(query,username):
             else:
                 if col in df.columns:
                     df[col]=col_data
+                    df.columns = original_headers
                     df.to_csv(table_path,index=False)
                     print('All row(s) updated!')
                 else:
@@ -422,10 +454,13 @@ def delete_query(query,username):
     chunk=query.strip().split(' ')
     if chunk[0].lower()=='delete' and chunk[1].lower()=='from':
         table_name=chunk[2].strip()
-        table_path=os.path.join(os.getcwd(), username, table_name+".csv")
+        table_path = get_table_path(username, table_name)
         if os.path.exists(table_path):
             try:
                 df = pd.read_csv(table_path)
+                original_headers = list(df.columns)
+                col_name = [col.split('.')[0] for col in df.columns]
+                df.columns = col_name
             except pd.errors.EmptyDataError:
                 print("Table is empty (no header / schema). Nothing to delete.")
                 return
@@ -473,6 +508,7 @@ def delete_query(query,username):
                         mask=(s<=v)
 
                     df=df.loc[~mask]
+                    df.columns = original_headers 
                     df.to_csv(table_path,index=False)
                     print(f"Row(s) deleted! ({int(mask.sum())})")
                 else:
@@ -480,6 +516,7 @@ def delete_query(query,username):
                     return
             else:
                 df=df.iloc[0:0]
+                df.columns = original_headers 
                 df.to_csv(table_path,index=False)
                 print("All Row(s) deleted!")  
         else:
@@ -487,8 +524,6 @@ def delete_query(query,username):
     else:
         print('Syntax error! [DELETE FROM <table_name> WHERE <condition>(optional)]')
         return
-
-def begin_txn(username):
 
 
 def query(username):

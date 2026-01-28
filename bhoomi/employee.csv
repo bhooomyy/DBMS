@@ -1,5 +1,8 @@
-empName,empId,empDepartment
+empName.string,empId.integer,empDepartment.float
 NONE,101,
+Bhoomi,10,101.1
 Mahi,20,101.2
 Divya,30,101.1
 Prinsi,40,100.1
+Sneha,60,200.1
+Sneha,60,200.1

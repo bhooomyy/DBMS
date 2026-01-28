@@ -26,6 +26,7 @@ def validate_password(password):
         return True
     else:
         print(' 1. Password must contain atleast 1 capital letter.\n 2. password must contains atleast 1 digit.\n 3. password must has 8 characters.\n 4. password has atleast 1 special character.')
+        sign_up()
         return False
 
 def validate_re_entered_password(password,re_entered_password):
@@ -37,6 +38,7 @@ def validate_re_entered_password(password,re_entered_password):
             print(' 1. Password must contain atleast 1 capital letter.\n 2. password must contains atleast 1 digit.\n 3. password must has 8 characters.\n 4. password has atleast 1 special character.')
         elif password!=re_entered_password:
             print('password mis match error!')
+        sign_up()
         return False
 
 def validate_email(email):
