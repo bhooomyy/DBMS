@@ -4,13 +4,19 @@ import uuid
 #table_path='/Users/bhoomi/Documents/GitHub/DBMS/'
 BASE_DIR=os.path.dirname(os.path.abspath(__file__))
 TXN={
-    "active":False,
-    "id":None,
-    "staged_dir":None,
-    "touched":set(),
+    "active":False, #CRUD operation directly on csv. True -> CRUD operations works on temp copies
+    "id":None, # unique name for transaction
+    "staged_dir":None, # during transaction work written on temp files before commit
+    "touched":set(), # set of tables used during transaction
 }
 def _user_dir(username):
     return os.path.join(BASE_DIR,username)
+
+def _staged_table_path(username,tablename):
+    return os.path.join(TXN["staged_dir"],f"{tablename}.csv")
+
+def _real_table_path(username,tablename):
+    return os.path.join(_user_dir(username),f"{tablename}.csv")
 
 def begin_txn(username):
     if TXN["active"]:
@@ -26,8 +32,44 @@ def begin_txn(username):
     TXN["staged_dir"]=staged_dir
     TXN["touched"]=set()
     print("BEGIN")
-    
 
+def commit_txn(username):
+    # if user enter commit before begin-> nothing to save
+    if not TXN['active']:
+        print("no active transaction.")
+        return
+    
+    # loop over all tables on which queries have been performed.
+    for tablename in TXN["touched"]:
+        staged=_staged_table_path(username,tablename)
+        real=_real_table_path(username,tablename)
+
+        # if path exist, path replaced to real path
+        if os.path.exists(staged):
+            # make new directory
+            os.makedirs(os.path.dirname(real),exist_ok=True)
+            # replace old(delete it) with new
+            os.replace(staged,real)
+    # free disk space. temp files no longer needed.
+    shutil.rmtree(TXN["staged_dir"],ignore_errors=True)
+    # transaction done. back to normal mode.
+    TXN["active"]=False
+    TXN["id"]=None
+    TXN["staged_dir"]=None
+    TXN["touched"]=set()
+    print("commit")
+
+def rollback_txn(username):
+    if not TXN["active"]:
+        print("no active transaction.")
+        return
+    
+    shutil.rmtree(TXN["staged_dir"],ignore_errors=True)
+    TXN["active"]=False
+    TXN["id"]=None
+    TXN["staged_dir"]=None
+    TXN["touched"]=set()
+    print("Rollback")
         
 def create_query(query,username):
     if '(' in query and ')' in query:
@@ -457,10 +499,10 @@ def query(username):
         command=query.strip().split(' ')
         if command[0].lower()=='begin':
             begin_txn(username)
-        #elif command[0].lower()=='commit':
-        #    commit_txn(username)
-        #elif command[0].lower()=='rollback':
-        #    rollback_txn(username)
+        elif command[0].lower()=='commit':
+            commit_txn(username)
+        elif command[0].lower()=='rollback':
+            rollback_txn(username)
         elif command[0].lower()=='select':
             select_query(query,username)
         elif command[0].lower()=='create':
