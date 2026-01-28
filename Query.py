@@ -266,7 +266,6 @@ def select_query(query,username):
                 print(f"Index {requested_col}")
                 print(filtered_df[requested_col])       
 
-
 def update_query(query,username):
     chunk=query.strip().split(' ')
     if chunk[0].lower()=='update' and chunk[2].lower()=='set':
@@ -349,6 +348,76 @@ def update_query(query,username):
     else:
         print('Syntax error! follow structure->[UPDATE table_name SET column_name = new_value WHERE condition;]')
 
+def delete_query(query,username):
+    chunk=query.strip().split(' ')
+    if chunk[0].lower()=='delete' and chunk[1].lower()=='from':
+        table_name=chunk[2].strip()
+        table_path=os.path.join(os.getcwd(), username, table_name+".csv")
+        if os.path.exists(table_path):
+            try:
+                df = pd.read_csv(table_path)
+            except pd.errors.EmptyDataError:
+                print("Table is empty (no header / schema). Nothing to delete.")
+                return
+
+
+            where_part=None
+            if 'where' in query.lower():
+                where_part=query.split('where',1)[1]
+            
+            if where_part is not None:
+                where_part=where_part.rstrip(';').strip()
+
+                ops=['<=','>=','<>','!=','=','<','>']
+                op_found=None
+                for op in ops:
+                    if op in where_part:
+                        op_found=op
+                        temp=where_part.split(op,1)
+                        condition_col=temp[0].strip()
+                        condition_col_data=temp[1].strip()
+                        break
+                
+                if op_found is None:
+                    print('Syntax error in where! Use one of: =, !=, <>, <, >, <=, >=')
+                    return
+                
+                if (condition_col_data.startswith("'") and condition_col_data.endswith("'")) or (condition_col_data.startswith('"') and condition_col_data.endswith('"')):
+                    condition_col_data=condition_col_data[1:-1]
+                
+                if condition_col in df.columns:
+                    s=df[condition_col].astype(str)
+                    v=str(condition_col_data)
+
+                    if op_found== '=':
+                        mask=(s==v)
+                    elif op_found in ('!=','<>'):
+                        mask=(s!=v)
+                    elif op_found=='<':
+                        mask=(s<v)
+                    elif op_found=='>':
+                        mask=(s>v)
+                    elif op_found=='>=':
+                        mask=(s>=v)
+                    elif op_found =='<=':
+                        mask=(s<=v)
+
+                    df=df.loc[~mask]
+                    df.to_csv(table_path,index=False)
+                    print(f"Row(s) deleted! ({int(mask.sum())})")
+                else:
+                    print(f"{condition_col} doesn't exists. please check column name")
+                    return
+            else:
+                df=df.iloc[0:0]
+                df.to_csv(table_path,index=False)
+                print("All Row(s) deleted!")  
+        else:
+            print('No such table exists. please check table name')
+    else:
+        print('Syntax error! [DELETE FROM <table_name> WHERE <condition>(optional)]')
+        return
+
 def query(username):
     while True:
         query=input('\nPress enter to End the session...\nEnter query: ')
@@ -363,7 +432,7 @@ def query(username):
             insert_query(query,username)
         elif command[0].lower()=='update':
             update_query(query,username)
-        # elif command[0].lower=='delete':
-        #     delete_query(query,username)
-        # else:
-        #     print('Not a valid query format')
+        elif command[0].lower()=='delete':
+            delete_query(query,username)
+        else:
+            print('Not a valid query format')
